@@ -28,6 +28,27 @@ export default {
 		const url = new URL(request.url);
 		const path = url.pathname;
 
+		// Función para configurar los headers CORS
+		const setCorsHeaders = (response: Response): Response => {
+			const newHeaders = new Headers(response.headers);
+			newHeaders.set('Access-Control-Allow-Origin', '*');
+			newHeaders.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+			newHeaders.set('Access-Control-Allow-Headers', 'Content-Type');
+			
+			return new Response(response.body, {
+				status: response.status,
+				statusText: response.statusText,
+				headers: newHeaders
+			});
+		};
+
+		// Manejar solicitudes preflight OPTIONS
+		if (request.method === 'OPTIONS') {
+			return setCorsHeaders(new Response(null, {
+				status: 204,
+			}));
+		}
+
 		// Verificar si es una solicitud POST a /translate
 		if (path === "/translate" && request.method === "POST") {
 			try {
@@ -36,10 +57,10 @@ export default {
 				
 				// Verificar que se proporcionaron los campos necesarios
 				if (!requestData.text || !requestData.target_lang) {
-					return new Response(JSON.stringify({ error: "Se requieren los campos 'text' y 'target_lang'" }), {
+					return setCorsHeaders(new Response(JSON.stringify({ error: "Se requieren los campos 'text' y 'target_lang'" }), {
 						status: 400,
 						headers: { "Content-Type": "application/json" }
-					});
+					}));
 				}
 
 				// Realizar la traducción con el modelo m2m100
@@ -52,20 +73,20 @@ export default {
 					}
 				);
 
-				// Devolver la respuesta de traducción
-				return new Response(JSON.stringify(response), {
+				// Devolver la respuesta de traducción con headers CORS
+				return setCorsHeaders(new Response(JSON.stringify(response), {
 					headers: { "Content-Type": "application/json" }
-				});
+				}));
 			} catch (error) {
 				const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-				return new Response(JSON.stringify({ error: "Error al procesar la solicitud: " + errorMessage }), {
+				return setCorsHeaders(new Response(JSON.stringify({ error: "Error al procesar la solicitud: " + errorMessage }), {
 					status: 500,
 					headers: { "Content-Type": "application/json" }
-				});
+				}));
 			}
 		}
 
-		// Default response for other routes/methods
-		return new Response("Not found", { status: 404 });
+		// Default response for other routes/methods with CORS headers
+		return setCorsHeaders(new Response("Not found", { status: 404 }));
 	},
 } satisfies ExportedHandler<Env>;
