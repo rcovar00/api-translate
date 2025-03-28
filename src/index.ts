@@ -70,7 +70,13 @@ export default {
 						text: requestData.text,
 						source_lang: requestData.source_lang || "spanish", // Si no se especifica, se usa detección automática
 						target_lang: requestData.target_lang,
-					}
+					},
+          {
+            gateway: {
+              id: "translate",
+              skipCache: false
+            },
+          }
 				);
 
 				// Devolver la respuesta de traducción con headers CORS
